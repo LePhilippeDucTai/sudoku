@@ -4,6 +4,7 @@ import itertools as it
 SUDOKU_NUMS = set(range(1, 10))
 INDICES_SUDOKU = list(range(9))
 
+
 def get_block(mat, i, j):
     row = (i // 3) * 3
     col = (j // 3) * 3
@@ -16,6 +17,7 @@ def get_col(mat, j):
 
 def get_row(mat, i):
     return mat[i, :]
+
 
 def choices(grid, row, col):
     return (
@@ -38,7 +40,6 @@ def sudoku_fill_one(_grid):
             grid[row, col] = available_choices.pop()
             return sudoku_fill_one(grid)
     return grid
-
 
 
 class SudokuSolver:
