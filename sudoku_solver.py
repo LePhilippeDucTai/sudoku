@@ -1,5 +1,8 @@
-import numpy as np
+import functools as ft
 import itertools as it
+from re import A
+
+import numpy as np
 
 SUDOKU_NUMS = set(range(1, 10))
 INDICES_SUDOKU = list(range(9))
@@ -28,26 +31,37 @@ def choices(grid, row, col):
     )
 
 
-def sudoku_fill_one(_grid):
+def coords_to_fill(grid_enum, grid):
+    (row, col), value = grid_enum
+    if value == 0:
+        valid_choices = choices(grid, row, col)
+        if len(valid_choices) == 1:
+            return row, col, valid_choices.pop()
+
+
+def cells_to_fill(acc, free_cell, grid):
+    """free_cell : (row, col), x (ndenumerate)"""
+    if valid := coords_to_fill(free_cell, grid):
+        return acc + [valid]
+    return acc
+
+
+def grid_cells_to_fill(grid):
+    return ft.partial(cells_to_fill, grid=grid)
+
+
+def sudoku_basic_fill(_grid):
     """Pour tout élément de grid : remplir par le nombre
     manquant si c'est l'unique élément qu'on puisse mettre."""
     grid = _grid.copy()
-    cartesian = it.product(range(9), repeat=2)
-    indices = filter(lambda i: grid[i] == 0, cartesian)
-    for row, col in indices:
-        available_choices = choices(grid, row, col)
-        if len(available_choices) == 1:
-            grid[row, col] = available_choices.pop()
-            return sudoku_fill_one(grid)
+    grid_enum = np.ndenumerate(grid)
+    coords_valid_values = ft.reduce(grid_cells_to_fill(grid), grid_enum, [])
+    x_y_val = tuple(zip(*coords_valid_values))
+    if x_y_val:
+        x, y, values = x_y_val
+        grid[x, y] = values
+        return sudoku_basic_fill(grid)
     return grid
-
-
-class SudokuSolver:
-    def __init__(self, sudoku_grid: np.array):
-        self.sudoku_grid = sudoku_grid
-
-    def solve(self, sudoku):
-        pass
 
 
 def main():
@@ -63,7 +77,7 @@ def main():
         [0, 0, 0, 0, 8, 0, 0, 7, 9],
     ]
     grid = np.array(puzzle).reshape(9, 9)
-    res = sudoku_fill_one(grid)
+    res = sudoku_basic_fill(grid)
     print(res)
 
 
