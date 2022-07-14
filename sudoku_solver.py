@@ -5,6 +5,7 @@ import numpy as np
 
 SUDOKU_NUMS = set(range(1, 10))
 
+
 def get_block(mat, i, j):
     row = (i // 3) * 3
     col = (j // 3) * 3
@@ -27,6 +28,7 @@ def choices(grid, row, col):
         - set(get_block(grid, row, col))
     )
 
+
 def coords_to_fill(grid_enum, grid):
     (row, col), value = grid_enum
     if value == 0:
@@ -37,7 +39,7 @@ def coords_to_fill(grid_enum, grid):
 
 def cells_to_fill(acc: list, free_cell: List[Tuple[int, int, int]], grid):
     """free_cell : (row, col), x (ndenumerate)
-        Accumule 'acc' des tuples (row, col, value) valides
+    Accumule 'acc' des tuples (row, col, value) valides
     """
     if valid := coords_to_fill(free_cell, grid):
         return acc + [valid]
@@ -48,7 +50,7 @@ def grid_cells_to_fill(grid):
     return ft.partial(cells_to_fill, grid=grid)
 
 
-def sudoku_basic_fill(_grid : np.ndarray) -> np.ndarray:
+def sudoku_basic_fill(_grid: np.ndarray) -> np.ndarray:
     """Pour tout élément de grid : remplir par le nombre
     manquant si c'est l'unique élément qu'on puisse mettre."""
     grid = _grid.copy()
@@ -61,21 +63,37 @@ def sudoku_basic_fill(_grid : np.ndarray) -> np.ndarray:
         return sudoku_basic_fill(grid)
     return grid
 
+
 def has_zeros(mat):
     return any(x == 0 for x in mat.flatten())
+
 
 def is_valid(grid):
     for indice, _ in np.ndenumerate(grid):
         row, col = indice
-        cols = set(get_col(grid,col))
-        rows = set(get_row(grid,row))
+        cols = set(get_col(grid, col))
+        rows = set(get_row(grid, row))
         blocks = set(get_block(grid, row, col))
         if any(x != SUDOKU_NUMS for x in (cols, rows, blocks)):
             return False
     return True
-            
-        
-    
+
+
+def union(left, right):
+    if left is not None:
+        return left
+    elif right is not None:
+        return right
+    else:
+        return None
+
+
+def mutate_grid_solve(grid, indices, value):
+    _grid = grid.copy()
+    _grid[indices] = value
+    return sudoku_solver(_grid)
+
+
 def sudoku_solver(grid):
     _grid = grid.copy()
     simple_solved = sudoku_basic_fill(_grid)
@@ -85,18 +103,10 @@ def sudoku_solver(grid):
         if value == 0:
             remaining = choices(simple_solved, *indices)
             if len(remaining) == 2:
-                grid_one = simple_solved.copy()
-                grid_two = simple_solved.copy()
-                grid_one[indices] = remaining.pop()
-                grid_two[indices] = remaining.pop()
-                solved_1 = sudoku_solver(grid_one)
-                solved_2 = sudoku_solver(grid_two)
-                if solved_1 is not None:
-                    return solved_1
-                elif solved_2 is not None:
-                    return solved_2
-                else:
-                    return None
+                return union(
+                    mutate_grid_solve(grid, indices, remaining.pop()),
+                    mutate_grid_solve(grid, indices, remaining.pop()),
+                )
 
 
 def main():
