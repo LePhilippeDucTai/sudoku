@@ -1,6 +1,4 @@
 import functools as ft
-import itertools as it
-from re import A
 
 import numpy as np
 
