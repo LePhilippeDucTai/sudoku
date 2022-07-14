@@ -27,7 +27,6 @@ def choices(grid, row, col):
         - set(get_block(grid, row, col))
     )
 
-
 def coords_to_fill(grid_enum, grid):
     (row, col), value = grid_enum
     if value == 0:
@@ -62,21 +61,54 @@ def sudoku_basic_fill(_grid : np.ndarray) -> np.ndarray:
         return sudoku_basic_fill(grid)
     return grid
 
+def has_zeros(mat):
+    return any(x == 0 for x in mat.flatten())
+
+def is_valid(grid):
+    for indice, val in np.ndenumerate(grid):
+        row, col = indice
+        cols = set(get_col(grid,col))
+        rows = set(get_row(grid,row))
+        blocks = set(get_block(grid, row, col))
+        if any(x != SUDOKU_NUMS for x in (cols, rows, blocks)):
+            return False
+    return True
+            
+        
+    
+def sudoku_solver(grid):
+    _grid = grid.copy()
+    simple_solved = sudoku_basic_fill(_grid)
+    if is_valid(simple_solved):
+        return simple_solved
+    for indices, value in np.ndenumerate(simple_solved):
+        if value == 0:
+            remaining = choices(simple_solved, *indices)
+            if len(remaining) == 2:
+                print(remaining)
+                grid_one = simple_solved.copy()
+                grid_two = simple_solved.copy()
+                grid_one[indices] = remaining.pop()
+                grid_two[indices] = remaining.pop()
+                solved_1 = sudoku_solver(grid_one)
+                solved_2 = sudoku_solver(grid_two)
+                return solved_1, solved_2
+
 
 def main():
     puzzle = [
-        [5, 3, 0, 0, 7, 0, 0, 0, 0],
-        [6, 0, 0, 1, 9, 5, 0, 0, 0],
-        [0, 9, 8, 0, 0, 0, 0, 6, 0],
-        [8, 0, 0, 0, 6, 0, 0, 0, 3],
-        [4, 0, 0, 8, 0, 3, 0, 0, 1],
-        [7, 0, 0, 0, 2, 0, 0, 0, 6],
-        [0, 6, 0, 0, 0, 0, 2, 8, 0],
-        [0, 0, 0, 4, 1, 9, 0, 0, 5],
-        [0, 0, 0, 0, 8, 0, 0, 7, 9],
+        [6, 0, 0, 3, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 9, 0, 6],
+        [0, 9, 0, 7, 4, 0, 8, 0, 0],
+        [0, 1, 0, 6, 0, 0, 7, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 9, 0, 0, 1, 0, 8, 0],
+        [0, 0, 4, 0, 7, 5, 0, 1, 0],
+        [7, 0, 5, 0, 0, 2, 0, 0, 0],
+        [0, 0, 0, 0, 0, 3, 0, 0, 5],
     ]
     grid = np.array(puzzle).reshape(9, 9)
-    res = sudoku_basic_fill(grid)
+    res = sudoku_solver(grid)
     print(res)
 
 
