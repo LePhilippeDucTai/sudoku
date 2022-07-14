@@ -65,7 +65,7 @@ def has_zeros(mat):
     return any(x == 0 for x in mat.flatten())
 
 def is_valid(grid):
-    for indice, val in np.ndenumerate(grid):
+    for indice, _ in np.ndenumerate(grid):
         row, col = indice
         cols = set(get_col(grid,col))
         rows = set(get_row(grid,row))
@@ -85,14 +85,18 @@ def sudoku_solver(grid):
         if value == 0:
             remaining = choices(simple_solved, *indices)
             if len(remaining) == 2:
-                print(remaining)
                 grid_one = simple_solved.copy()
                 grid_two = simple_solved.copy()
                 grid_one[indices] = remaining.pop()
                 grid_two[indices] = remaining.pop()
                 solved_1 = sudoku_solver(grid_one)
                 solved_2 = sudoku_solver(grid_two)
-                return solved_1, solved_2
+                if solved_1 is not None:
+                    return solved_1
+                elif solved_2 is not None:
+                    return solved_2
+                else:
+                    return None
 
 
 def main():
