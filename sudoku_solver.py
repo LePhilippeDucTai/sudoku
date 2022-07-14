@@ -1,10 +1,9 @@
 import functools as ft
+from typing import List, Tuple
 
 import numpy as np
 
 SUDOKU_NUMS = set(range(1, 10))
-INDICES_SUDOKU = list(range(9))
-
 
 def get_block(mat, i, j):
     row = (i // 3) * 3
@@ -37,8 +36,10 @@ def coords_to_fill(grid_enum, grid):
             return row, col, valid_choices.pop()
 
 
-def cells_to_fill(acc, free_cell, grid):
-    """free_cell : (row, col), x (ndenumerate)"""
+def cells_to_fill(acc: list, free_cell: List[Tuple[int, int, int]], grid):
+    """free_cell : (row, col), x (ndenumerate)
+        Accumule 'acc' des tuples (row, col, value) valides
+    """
     if valid := coords_to_fill(free_cell, grid):
         return acc + [valid]
     return acc
@@ -48,7 +49,7 @@ def grid_cells_to_fill(grid):
     return ft.partial(cells_to_fill, grid=grid)
 
 
-def sudoku_basic_fill(_grid):
+def sudoku_basic_fill(_grid : np.ndarray) -> np.ndarray:
     """Pour tout élément de grid : remplir par le nombre
     manquant si c'est l'unique élément qu'on puisse mettre."""
     grid = _grid.copy()
