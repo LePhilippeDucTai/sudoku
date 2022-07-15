@@ -64,10 +64,6 @@ def sudoku_basic_fill(_grid: np.ndarray) -> np.ndarray:
     return grid
 
 
-def has_zeros(mat):
-    return any(x == 0 for x in mat.flatten())
-
-
 def is_valid(grid):
     for indice, _ in np.ndenumerate(grid):
         row, col = indice
@@ -91,33 +87,19 @@ def mutate_grid_solve(grid, indices, value):
     return sudoku_solver(_grid)
 
 
-def fst(enum):
-    return enum[0]
-
-
-def snd(enum):
-    return enum[1]
-
-
-def sudoku_solver(grid):
-    _grid = grid.copy()
-    simple_solved = sudoku_basic_fill(_grid)
-    if is_valid(simple_solved):
-        return simple_solved
-
-    cells_enum = np.ndenumerate(simple_solved)
+def sudoku_solver(_grid):
+    grid = sudoku_basic_fill(_grid)
+    if is_valid(grid):
+        return grid
+    cells_enum = np.ndenumerate(grid)
     null_cells = (index for index, value in cells_enum if value == 0)
-    remaining = ((index, choices(simple_solved, *index)) for index in null_cells)
-    filter_has_two_choices = (
-        (indices, set_to_pop)
-        for indices, set_to_pop in remaining
-        if len(set_to_pop) == 2
-    )
+    cells_choices = ((index, choices(grid, *index)) for index in null_cells)
+    filter_has_two_choices = ((i, x) for i, x in cells_choices if len(x) == 2)
     try:
         indices, set_to_pop = next(filter_has_two_choices)
         return coalesce(
-            mutate_grid_solve(simple_solved, indices, set_to_pop.pop()),
-            mutate_grid_solve(simple_solved, indices, set_to_pop.pop()),
+            mutate_grid_solve(grid, indices, set_to_pop.pop()),
+            mutate_grid_solve(grid, indices, set_to_pop.pop()),
         )
     except StopIteration:
         return None
