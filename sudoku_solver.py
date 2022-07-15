@@ -1,5 +1,6 @@
 import functools as ft
 from typing import List, Tuple
+from timing import time_it
 
 import numpy as np
 
@@ -86,7 +87,7 @@ def mutate_grid_solve(grid, indices, value):
     _grid[indices] = value
     return sudoku_solver(_grid)
 
-
+@time_it
 def sudoku_solver(_grid):
     grid = sudoku_basic_fill(_grid)
     if is_valid(grid):
