@@ -1,8 +1,6 @@
-import functools as ft
-from typing import List, Tuple
-from timing import time_it
-
 import numpy as np
+
+from timing import time_it
 
 SUDOKU_NUMS = set(range(1, 10))
 
@@ -30,37 +28,21 @@ def choices(grid, row, col):
     )
 
 
-def coords_to_fill(grid_enum, grid):
-    (row, col), value = grid_enum
-    if value == 0:
-        valid_choices = choices(grid, row, col)
-        if len(valid_choices) == 1:
-            return row, col, valid_choices.pop()
-
-
-def cells_to_fill(acc: list, free_cell: List[Tuple[int, int, int]], grid):
-    """free_cell : (row, col), x (ndenumerate)
-    Accumule 'acc' des tuples (row, col, value) valides
-    """
-    if valid := coords_to_fill(free_cell, grid):
-        return acc + [valid]
-    return acc
-
-
-def grid_cells_to_fill(grid):
-    return ft.partial(cells_to_fill, grid=grid)
-
-
 def sudoku_basic_fill(_grid: np.ndarray) -> np.ndarray:
     """Pour tout élément de grid : remplir par le nombre
     manquant si c'est l'unique élément qu'on puisse mettre."""
     grid = _grid.copy()
     grid_enum = np.ndenumerate(grid)
-    coords_valid_values = ft.reduce(grid_cells_to_fill(grid), grid_enum, [])
+    null_cells = (index for index, value in grid_enum if value == 0)
+    coords_valid_values = (
+        (*index, valid_choices.pop())
+        for index in null_cells
+        if len(valid_choices := choices(grid, *index)) == 1
+    )
     x_y_val = tuple(zip(*coords_valid_values))
     if x_y_val:
-        x, y, values = x_y_val
-        grid[x, y] = values
+        row, col, values = x_y_val
+        grid[row, col] = values
         return sudoku_basic_fill(grid)
     return grid
 
@@ -111,44 +93,61 @@ def sudoku_solve(grid):
     return sudoku_solver(grid)
 
 
+@time_it
 def main():
+    # Easy : 3 ms
     puzzle = [
-        [6, 0, 0, 3, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 9, 0, 6],
-        [0, 9, 0, 7, 4, 0, 8, 0, 0],
-        [0, 1, 0, 6, 0, 0, 7, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 9, 0, 0, 1, 0, 8, 0],
-        [0, 0, 4, 0, 7, 5, 0, 1, 0],
-        [7, 0, 5, 0, 0, 2, 0, 0, 0],
-        [0, 0, 0, 0, 0, 3, 0, 0, 5],
+        [5, 3, 0, 0, 7, 0, 0, 0, 0],
+        [6, 0, 0, 1, 9, 5, 0, 0, 0],
+        [0, 9, 8, 0, 0, 0, 0, 6, 0],
+        [8, 0, 0, 0, 6, 0, 0, 0, 3],
+        [4, 0, 0, 8, 0, 3, 0, 0, 1],
+        [7, 0, 0, 0, 2, 0, 0, 0, 6],
+        [0, 6, 0, 0, 0, 0, 2, 8, 0],
+        [0, 0, 0, 4, 1, 9, 0, 0, 5],
+        [0, 0, 0, 0, 8, 0, 0, 7, 9],
     ]
 
-    puzzle = [
-        [0, 0, 0, 8, 0, 0, 0, 7, 0],
-        [0, 9, 0, 0, 0, 0, 0, 3, 0],
-        [1, 0, 0, 0, 0, 4, 9, 0, 8],
-        [0, 0, 0, 0, 0, 0, 0, 9, 0],
-        [4, 0, 0, 0, 5, 0, 0, 0, 0],
-        [0, 1, 0, 3, 0, 0, 6, 0, 2],
-        [0, 0, 0, 0, 0, 0, 0, 0, 7],
-        [0, 6, 0, 2, 0, 0, 8, 0, 1],
-        [0, 0, 2, 0, 0, 3, 0, 0, 0],
-    ]
+    # 623 ms
+    # puzzle = [
+    #     [6, 0, 0, 3, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 1, 0, 0, 9, 0, 6],
+    #     [0, 9, 0, 7, 4, 0, 8, 0, 0],
+    #     [0, 1, 0, 6, 0, 0, 7, 0, 0],
+    #     [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 9, 0, 0, 1, 0, 8, 0],
+    #     [0, 0, 4, 0, 7, 5, 0, 1, 0],
+    #     [7, 0, 5, 0, 0, 2, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 3, 0, 0, 5],
+    # ]
 
-    puzzle = [
-        [0, 0, 5, 3, 0, 0, 0, 0, 0],
-        [8, 0, 0, 0, 0, 0, 0, 2, 0],
-        [0, 7, 0, 0, 1, 0, 5, 0, 0],
-        [4, 0, 0, 0, 0, 5, 3, 0, 0],
-        [0, 1, 0, 0, 7, 0, 0, 0, 6],
-        [0, 0, 3, 2, 0, 0, 0, 8, 0],
-        [0, 6, 0, 5, 0, 0, 0, 0, 9],
-        [0, 0, 4, 0, 0, 0, 0, 3, 0],
-        [0, 0, 0, 0, 0, 9, 7, 0, 0],
-    ]
+    # 844 ms
+    # puzzle = [
+    #     [0, 0, 0, 8, 0, 0, 0, 7, 0],
+    #     [0, 9, 0, 0, 0, 0, 0, 3, 0],
+    #     [1, 0, 0, 0, 0, 4, 9, 0, 8],
+    #     [0, 0, 0, 0, 0, 0, 0, 9, 0],
+    #     [4, 0, 0, 0, 5, 0, 0, 0, 0],
+    #     [0, 1, 0, 3, 0, 0, 6, 0, 2],
+    #     [0, 0, 0, 0, 0, 0, 0, 0, 7],
+    #     [0, 6, 0, 2, 0, 0, 8, 0, 1],
+    #     [0, 0, 2, 0, 0, 3, 0, 0, 0],
+    # ]
 
-    # AI Escargot (600 ms)
+    # 365 ms
+    # puzzle = [
+    #     [0, 0, 5, 3, 0, 0, 0, 0, 0],
+    #     [8, 0, 0, 0, 0, 0, 0, 2, 0],
+    #     [0, 7, 0, 0, 1, 0, 5, 0, 0],
+    #     [4, 0, 0, 0, 0, 5, 3, 0, 0],
+    #     [0, 1, 0, 0, 7, 0, 0, 0, 6],
+    #     [0, 0, 3, 2, 0, 0, 0, 8, 0],
+    #     [0, 6, 0, 5, 0, 0, 0, 0, 9],
+    #     [0, 0, 4, 0, 0, 0, 0, 3, 0],
+    #     [0, 0, 0, 0, 0, 9, 7, 0, 0],
+    # ]
+
+    # AI Escargot (500 ms)
     puzzle = [
         [1, 0, 0, 0, 0, 7, 0, 9, 0],
         [0, 3, 0, 0, 2, 0, 0, 0, 8],
@@ -158,23 +157,22 @@ def main():
         [6, 0, 0, 0, 0, 4, 0, 0, 0],
         [3, 0, 0, 0, 0, 0, 0, 1, 0],
         [0, 4, 0, 0, 0, 0, 0, 0, 7],
-        [0, 0, 7, 0, 0, 0, 3, 0, 0]
+        [0, 0, 7, 0, 0, 0, 3, 0, 0],
     ]
 
-    # World's Hardest (10 secs computing time)
+    # World's Hardest (7,5 secs computing time)
     # https://www.conceptispuzzles.com/index.aspx?uri=info/article/424
-    puzzle = [
-        [8, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 3, 6, 0, 0, 0, 0, 0],
-        [0, 7, 0, 0, 9, 0, 2, 0, 0],
-        [0, 5, 0, 0, 0, 7, 0, 0, 0],
-        [0, 0, 0, 0, 4, 5, 7, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 3, 0],
-        [0, 0, 1, 0, 0, 0, 0, 6, 8],
-        [0, 0, 8, 5, 0, 0, 0, 1, 0],
-        [0, 9, 0, 0, 0, 0, 4, 0, 0],
-    ]
-
+    # puzzle = [
+    #     [8, 0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 3, 6, 0, 0, 0, 0, 0],
+    #     [0, 7, 0, 0, 9, 0, 2, 0, 0],
+    #     [0, 5, 0, 0, 0, 7, 0, 0, 0],
+    #     [0, 0, 0, 0, 4, 5, 7, 0, 0],
+    #     [0, 0, 0, 1, 0, 0, 0, 3, 0],
+    #     [0, 0, 1, 0, 0, 0, 0, 6, 8],
+    #     [0, 0, 8, 5, 0, 0, 0, 1, 0],
+    #     [0, 9, 0, 0, 0, 0, 4, 0, 0],
+    # ]
 
     grid = np.array(puzzle).reshape(9, 9)
     res = sudoku_solve(grid)
