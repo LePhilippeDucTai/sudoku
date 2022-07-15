@@ -87,7 +87,6 @@ def mutate_grid_solve(grid, indices, value):
     _grid[indices] = value
     return sudoku_solver(_grid)
 
-@time_it
 def sudoku_solver(_grid):
     grid = sudoku_basic_fill(_grid)
     if is_valid(grid):
@@ -105,6 +104,10 @@ def sudoku_solver(_grid):
     except StopIteration:
         return None
 
+@time_it
+def sudoku_solve(grid):
+    return sudoku_solver(grid)
+
 
 def main():
     puzzle = [
@@ -119,7 +122,7 @@ def main():
         [0, 0, 0, 0, 0, 3, 0, 0, 5],
     ]
     grid = np.array(puzzle).reshape(9, 9)
-    res = sudoku_solver(grid)
+    res = sudoku_solve(grid)
     print(res)
 
 
