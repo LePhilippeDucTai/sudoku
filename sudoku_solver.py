@@ -79,13 +79,10 @@ def is_valid(grid):
     return True
 
 
-def union(left, right):
-    if left is not None:
-        return left
-    elif right is not None:
-        return right
-    else:
-        return None
+def coalesce(*args):
+    for arg in args:
+        if arg is not None:
+            return arg
 
 
 def mutate_grid_solve(grid, indices, value):
@@ -94,19 +91,36 @@ def mutate_grid_solve(grid, indices, value):
     return sudoku_solver(_grid)
 
 
+def fst(enum):
+    return enum[0]
+
+
+def snd(enum):
+    return enum[1]
+
+
 def sudoku_solver(grid):
     _grid = grid.copy()
     simple_solved = sudoku_basic_fill(_grid)
     if is_valid(simple_solved):
         return simple_solved
-    for indices, value in np.ndenumerate(simple_solved):
-        if value == 0:
-            remaining = choices(simple_solved, *indices)
-            if len(remaining) == 2:
-                return union(
-                    mutate_grid_solve(grid, indices, remaining.pop()),
-                    mutate_grid_solve(grid, indices, remaining.pop()),
-                )
+
+    cells_enum = np.ndenumerate(simple_solved)
+    null_cells = (index for index, value in cells_enum if value == 0)
+    remaining = ((index, choices(simple_solved, *index)) for index in null_cells)
+    filter_has_two_choices = (
+        (indices, set_to_pop)
+        for indices, set_to_pop in remaining
+        if len(set_to_pop) == 2
+    )
+    try:
+        indices, set_to_pop = next(filter_has_two_choices)
+        return coalesce(
+            mutate_grid_solve(simple_solved, indices, set_to_pop.pop()),
+            mutate_grid_solve(simple_solved, indices, set_to_pop.pop()),
+        )
+    except StopIteration:
+        return None
 
 
 def main():
