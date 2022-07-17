@@ -1,2 +1,4 @@
 __pycache__/timing.cpython-310.pyc
 *.ipynb
+*.pyc
+*.egg-info
