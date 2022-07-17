@@ -1,8 +1,65 @@
+import functools as ft
+from collections import Counter
+from itertools import chain
+
 import numpy as np
 
 from timing import time_it
 
 SUDOKU_NUMS = set(range(1, 10))
+
+
+def flatten(list_of_lists):
+    "Flatten one level of nesting"
+    return chain.from_iterable(list_of_lists)
+
+
+def fill_block(mat, i, j, num):
+    row = (i // 3) * 3
+    col = (j // 3) * 3
+    mat[row : row + 3, col : col + 3] = num
+
+
+def separate_dims(index):
+    left, right = index
+    return (left, slice(None)), (slice(None), right)
+
+
+def fill_x(grid, indices_where_num):
+    indices_to_fill = [separate_dims(index) for index in indices_where_num]
+    for ind in flatten(indices_to_fill):
+        grid[ind] = -1
+
+
+def fill_impossibles(original_grid, num):
+    cgrid = original_grid.copy()
+    indices_where_num = np.argwhere(cgrid == num)
+    fill_x(cgrid, indices_where_num)
+    for index in indices_where_num:
+        fill_block(cgrid, *index, -1)
+    return cgrid
+
+
+def fill_numbers(grid):
+    cgrid = grid.copy()
+    change = 0
+    for num in SUDOKU_NUMS:
+        mask_grid = fill_impossibles(cgrid, num)
+        zeros_cgrid = np.argwhere(mask_grid == 0)
+        blocks = (zeros_cgrid // 3) * 3
+        n_blocks = 3 * blocks[:, 0] + blocks[:, 1]
+        unique_val = [n for n, c in Counter(n_blocks).items() if c == 1]
+        filtres_ = ft.reduce(lambda acc, x: acc | (n_blocks == x), unique_val, False)
+        ind_to_fill = zeros_cgrid[filtres_]
+        for ind in list(map(tuple, ind_to_fill)):
+            cgrid[ind] = num
+
+        if np.any(ind_to_fill):
+            change = 1
+
+    if change:
+        return fill_numbers(cgrid)
+    return cgrid
 
 
 def get_block(mat, i, j):
@@ -71,7 +128,8 @@ def mutate_grid_solve(grid, indices, value):
 
 
 def sudoku_solver(_grid):
-    grid = sudoku_basic_fill(_grid)
+    grid = fill_numbers(_grid)
+    grid = sudoku_basic_fill(grid)
     if is_valid(grid):
         return grid
     cells_enum = np.ndenumerate(grid)
@@ -96,17 +154,17 @@ def sudoku_solve(grid):
 @time_it
 def main():
     # Easy : 3 ms
-    puzzle = [
-        [5, 3, 0, 0, 7, 0, 0, 0, 0],
-        [6, 0, 0, 1, 9, 5, 0, 0, 0],
-        [0, 9, 8, 0, 0, 0, 0, 6, 0],
-        [8, 0, 0, 0, 6, 0, 0, 0, 3],
-        [4, 0, 0, 8, 0, 3, 0, 0, 1],
-        [7, 0, 0, 0, 2, 0, 0, 0, 6],
-        [0, 6, 0, 0, 0, 0, 2, 8, 0],
-        [0, 0, 0, 4, 1, 9, 0, 0, 5],
-        [0, 0, 0, 0, 8, 0, 0, 7, 9],
-    ]
+    # puzzle = [
+    #     [5, 3, 0, 0, 7, 0, 0, 0, 0],
+    #     [6, 0, 0, 1, 9, 5, 0, 0, 0],
+    #     [0, 9, 8, 0, 0, 0, 0, 6, 0],
+    #     [8, 0, 0, 0, 6, 0, 0, 0, 3],
+    #     [4, 0, 0, 8, 0, 3, 0, 0, 1],
+    #     [7, 0, 0, 0, 2, 0, 0, 0, 6],
+    #     [0, 6, 0, 0, 0, 0, 2, 8, 0],
+    #     [0, 0, 0, 4, 1, 9, 0, 0, 5],
+    #     [0, 0, 0, 0, 8, 0, 0, 7, 9],
+    # ]
 
     # 623 ms
     # puzzle = [
@@ -148,30 +206,42 @@ def main():
     # ]
 
     # AI Escargot (500 ms)
-    puzzle = [
-        [1, 0, 0, 0, 0, 7, 0, 9, 0],
-        [0, 3, 0, 0, 2, 0, 0, 0, 8],
-        [0, 0, 9, 6, 0, 0, 5, 0, 0],
-        [0, 0, 5, 3, 0, 0, 9, 0, 0],
-        [0, 1, 0, 0, 8, 0, 0, 0, 2],
-        [6, 0, 0, 0, 0, 4, 0, 0, 0],
-        [3, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 4, 0, 0, 0, 0, 0, 0, 7],
-        [0, 0, 7, 0, 0, 0, 3, 0, 0],
-    ]
+    # puzzle = [
+    #     [1, 0, 0, 0, 0, 7, 0, 9, 0],
+    #     [0, 3, 0, 0, 2, 0, 0, 0, 8],
+    #     [0, 0, 9, 6, 0, 0, 5, 0, 0],
+    #     [0, 0, 5, 3, 0, 0, 9, 0, 0],
+    #     [0, 1, 0, 0, 8, 0, 0, 0, 2],
+    #     [6, 0, 0, 0, 0, 4, 0, 0, 0],
+    #     [3, 0, 0, 0, 0, 0, 0, 1, 0],
+    #     [0, 4, 0, 0, 0, 0, 0, 0, 7],
+    #     [0, 0, 7, 0, 0, 0, 3, 0, 0],
+    # ]
 
     # World's Hardest (7,5 secs computing time)
     # https://www.conceptispuzzles.com/index.aspx?uri=info/article/424
+    puzzle = [
+        [8, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 3, 6, 0, 0, 0, 0, 0],
+        [0, 7, 0, 0, 9, 0, 2, 0, 0],
+        [0, 5, 0, 0, 0, 7, 0, 0, 0],
+        [0, 0, 0, 0, 4, 5, 7, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 3, 0],
+        [0, 0, 1, 0, 0, 0, 0, 6, 8],
+        [0, 0, 8, 5, 0, 0, 0, 1, 0],
+        [0, 9, 0, 0, 0, 0, 4, 0, 0],
+    ]
+
     # puzzle = [
-    #     [8, 0, 0, 0, 0, 0, 0, 0, 0],
-    #     [0, 0, 3, 6, 0, 0, 0, 0, 0],
-    #     [0, 7, 0, 0, 9, 0, 2, 0, 0],
-    #     [0, 5, 0, 0, 0, 7, 0, 0, 0],
-    #     [0, 0, 0, 0, 4, 5, 7, 0, 0],
-    #     [0, 0, 0, 1, 0, 0, 0, 3, 0],
-    #     [0, 0, 1, 0, 0, 0, 0, 6, 8],
-    #     [0, 0, 8, 5, 0, 0, 0, 1, 0],
-    #     [0, 9, 0, 0, 0, 0, 4, 0, 0],
+    #     [0, 0, 0, 0, 0, 4, 0, 0, 0],
+    #     [0, 0, 6, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 3, 9, 0, 7, 0, 5],
+    #     [0, 7, 4, 0, 0, 0, 0, 6, 0],
+    #     [0, 8, 0, 0, 0, 3, 0, 0, 9],
+    #     [9, 0, 2, 0, 1, 0, 3, 7, 0],
+    #     [0, 3, 1, 6, 0, 0, 9, 0, 0],
+    #     [0, 0, 9, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 5, 4, 0, 6, 0, 0],
     # ]
 
     grid = np.array(puzzle).reshape(9, 9)
